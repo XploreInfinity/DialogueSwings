@@ -1,0 +1,31 @@
+{% extends 'main/base.html' %}
+{% block content %}
+    <div class="results">
+        <h1>Explore your Dialogue Swings</h1>
+        <div class="classified-messages">
+            <h2>A Gist of the types of messages exchanged</h2>
+            <div class="messageClassificationGraph">
+                {{ messageClassification|safe }}
+            </div>
+        </div>
+        <div class="emoji-stats">
+            {% for sender,frequentEmojis in labelledEmojiCount %}
+                <div class="emoji-stats-card">
+                    <h3>{{ sender }}'s emojis</h3>
+                    <div class="emoji-counts">
+                        {% if not frequentEmojis %}
+                            None Found
+                        {% else %}
+                            {% for emojiCount in frequentEmojis %}
+                                <div class="emoji-count">
+                                    <span class="emoji">{{ emojiCount.0 }}</span>
+                                    <span class="count">{{ emojiCount.1 }}</span>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+{% endblock %}
