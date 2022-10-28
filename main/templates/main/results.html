@@ -12,13 +12,13 @@
     <div class="emoji-stats-card">
       <h3>{{ sender }}'s emojis</h3>
       <div class="emoji-counts">
-        {% if not frequentEmojis %} None Found {% else %} {% for emojiCount in
-        frequentEmojis %}
+        {% if not frequentEmojis %} None Found {% else %} {% for emojiCount in frequentEmojis %}
         <div class="emoji-count">
           <span class="emoji">{{ emojiCount.0 }}</span>
           <span class="count">{{ emojiCount.1 }}</span>
         </div>
-        {% endfor %} {% endif %}
+        {% endfor %} 
+        {% endif %}
       </div>
     </div>
     {% endfor %}
