@@ -1,14 +1,24 @@
-{% extends 'main/base.html' %}
-{% block content %}
-<div class="heading">
+{% extends 'main/base.html' %} {% block content %}
+<div class="container">
+  <div class="heading">
     <h1>Follow the flows</h1>
-</div>
-<div class="upload-form">
+  </div>
+  <div class="upload-form">
     <form method="POST" enctype="multipart/form-data">
-        {% csrf_token %}
-        <input type="file" name="chatFile" accept=".txt" class="form-control form-control-lg" required/>
-        <input type="submit" class="btn btn-lg btn-primary" value="Reveal Patterns!" />
-        
+      {% csrf_token %}
+      <input
+        type="file"
+        name="chatFile"
+        accept=".txt"
+        class="form-control form-control-lg mt-3"
+        required
+      />
+      <input
+        type="submit"
+        class="btn btn-lg btn-dark mt-3"
+        value="Reveal Patterns!"
+      />
     </form>
+  </div>
 </div>
 {% endblock %}
