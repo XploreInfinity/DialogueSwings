@@ -9,10 +9,12 @@ def upload(request):
         if request.FILES:
             chatFile = request.FILES['chatFile']
             nlproc = NLProcessor(chatFile)
-            graph,labelledEmojiCount,orderedSenders = nlproc.get_analysis()
-            context['messageClassification'] = graph
+            msgClassifiedGraph,labelledEmojiCount,orderedSenders,meanSentimentGraph,mostActiveHoursGraph = nlproc.get_analysis()
+            context['messageClassification'] = msgClassifiedGraph
             context['labelledEmojiCount'] = labelledEmojiCount
             context['orderedSenders'] = orderedSenders
+            context['meanSentimentGraph'] = meanSentimentGraph
+            context['mostActiveHoursGraph'] = mostActiveHoursGraph
         return render(request,'main/results.html',context=context)
     else:
         return render(request,'main/upload.html')

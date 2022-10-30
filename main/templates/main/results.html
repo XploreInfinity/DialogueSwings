@@ -1,16 +1,19 @@
-{% extends 'main/base.html' %} {% block content %}
-<div class="results container">
-  <h1>Explore your Dialogue Swings</h1>
-  <div class="classified-messages">
-    <h2>A Gist of the types of messages exchanged</h2>
-    <div class="messageClassificationGraph">
+{% extends 'main/base.html' %}
+{% block content %}
+<div class="results-container">
+  <h3>Here's what we found in your dialogue</h3>
+  <div class="graphical-display-metric">
+    <h4>A Gist of the type of Messages Exchanged</h4>
+    <div class="graph-container">
       {{ messageClassification|safe }}
     </div>
   </div>
+  <div class="graphical-display-metric">
+  <h4>Most frequently used emojis</h4>
   <div class="emoji-stats">
     {% for sender,frequentEmojis in labelledEmojiCount %}
     <div class="emoji-stats-card">
-      <h3>{{ sender }}'s emojis</h3>
+      <h5>{{ sender }}'s emojis</h5>
       <div class="emoji-counts">
         {% if not frequentEmojis %} None Found {% else %} {% for emojiCount in frequentEmojis %}
         <div class="emoji-count">
@@ -22,6 +25,19 @@
       </div>
     </div>
     {% endfor %}
+  </div>
+</div>
+  <div class="graphical-display-metric">
+    <h4>Periodic Mean Sentiment Throughout the Chat</h4>
+    <div class="graph-container">
+      {{ meanSentimentGraph|safe }}
+    </div>
+  </div>
+  <div class="graphical-display-metric">
+    <h4>Total Number of Messages Exchanged Every Hour of the Day</h4>
+    <div class="graph-container">
+      {{ mostActiveHoursGraph|safe }}
+    </div>
   </div>
 </div>
 {% endblock %}

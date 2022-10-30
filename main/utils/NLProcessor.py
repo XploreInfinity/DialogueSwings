@@ -1,11 +1,14 @@
 from collections import defaultdict
 import re,nltk,os,pickle,emoji,pandas as pd
+import seaborn as sns, matplotlib.pyplot as plt
 #For directly creating images using the backend:
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 from matplotlib.figure import Figure
 from io import StringIO #for storing image files in memory
 from collections import Counter #for counting emojis
-
+from nltk.sentiment import SentimentIntensityAnalyzer
+from io import BytesIO,StringIO
+import datetime
 class NLProcessor:
     def __init__(self,chatFile):
         lines = []
@@ -22,12 +25,17 @@ class NLProcessor:
         self.msgClassifiedGraph = self._classifyMessages()
         #Get emoji stats:
         self.labelledEmojiCount = self._getEmojiStats()
-    
+        #Caculate sentiment for each message and get a rolling mean sentiment graph:
+        self.meanSentimentGraph = self._calcMessageSentiment()
+        #Get the bar graph of the counts of messages exchanged every hour
+        self.mostActiveHoursGraph = self._plotMostActiveHours()    
     #returns all our results/conclusions
     def get_analysis(self):
         return (self.msgClassifiedGraph,
                 self.labelledEmojiCount,
-                self.orderedSenders)
+                self.orderedSenders,
+                self.meanSentimentGraph,
+                self.mostActiveHoursGraph)
 
     #This function creates the globally accesible pandas dataframe
     def _createDataframe(self,lines):
@@ -37,14 +45,14 @@ class NLProcessor:
         # Compile a regexp that segregates (for each line) the date-time from the rest of the text:
         reg = re.compile(r'^\d{1,2}/\d{1,2}/\d{1,2}, \d{1,2}:\d{1,2} - ')
         # We will initialise a pandas dataframe, columns values will be stored in these lists:
-        df_sender,df_msg,df_date,df_time = [],[],[],[]
+        df_sender,df_msg,df_date = [],[],[]
         for line in lines:
             matched = reg.match(line)
             if matched:
                 #the index at which the message begins
                 begin_idx = line[matched.end():].find(':')+1+matched.end()+1
                 #Extract date and time:
-                date,time= line[:matched.end()-3].split(", ")
+                date = line[:matched.end()-3]
                 #Extract the sender:
                 sender = line[matched.end():begin_idx-2]
                 #extract the message:
@@ -54,14 +62,12 @@ class NLProcessor:
                     #push these values to the dictionary:
                     ppl[sender].append({
                         "date":date,
-                        "time":time,
                         "msg": [message.strip()]
                     })
                     #Also add the sender and msg to the df column lists:
                     df_sender.append(sender)
                     df_msg.append(message.strip())
                     df_date.append(date)
-                    df_time.append(time)
             else:
                 #we assume it is a multiline message, and append the message texts to the previous message:
                 message = line.strip()
@@ -71,21 +77,18 @@ class NLProcessor:
                     df_sender.append(df_sender[-1])
                     df_msg.append(message)
                     df_date.append(df_date[-1])
-                    df_time.append(df_time[-1])
         #Our data:
         data = {
             "sender": df_sender,
             "msg": df_msg,
             "date": df_date,
-            "time": df_time
         }
         #Our global dataframe:
         self.df = pd.DataFrame(data)
         #For frontend display purposes, keep a sequential list of senders:
         self.orderedSenders = [sender for sender in self.df['sender']]
-        # convert date and time strings into the apropriate type:
-        self.df['date'] = pd.to_datetime(self.df['date'])
-        self.df['time'] = pd.to_datetime(self.df['time']).dt.strftime('%H')
+        # convert datetime strings into the apropriate type:
+        self.df['date'] = pd.to_datetime(self.df['date'],infer_datetime_format=True)
     
     #This function classifies messages(using a NaiveBayes classifier trained on nps_chat):
     def _classifyMessages(self):
@@ -125,7 +128,6 @@ class NLProcessor:
 
     #Plot the classified messages as a countplot,store it in a bytes format:
     def _plotMsgClassification(self):
-        import seaborn as sns, matplotlib.pyplot as plt
         fig = Figure(figsize=(10,7),dpi=100)
         axis = fig.subplots()
         sns.set(font_scale=2)
@@ -149,12 +151,60 @@ class NLProcessor:
                 emojis+=''.join(c for c in msg if emoji.is_emoji(c))
             commonCount.append([label,Counter(emojis).most_common()[:10]])
         return commonCount
-'''         
-def extract_emojis(msg):
-  return ''.join(c for c in msg if emoji.is_emoji(c))
-    for key, val in ppl.items():
-        emojis=extract_emojis(str(ppl[key]))
-        count = Counter(emojis).most_common()[:10]
-    print("{}'s emojis:\n {} \n".format(key, emojis))
-    print("Most common: {}\n\n".format(count))
-'''
+    
+    #Calculate the sentiment of each message using nltk's sia:
+    def _calcMessageSentiment(self):
+        sia = SentimentIntensityAnalyzer()
+        #to store the polarity score of each message:
+        df_polscore =[]
+        #for each message, get the compound sentiment score
+        for i in self.df['msg']:
+            df_polscore.append(sia.polarity_scores(i)["compound"])
+        #add the polarity score to the df:
+        self.df["polscore"] = df_polscore
+        #return the rolling mean sentiment graph:
+        return self._plotRollingMeanSentiment()
+    
+    #Calculate the rolling mean sentiment per sender
+    #TODO: Fix this horrible mess,get proper rolling samples AND smooth graph curves
+    def _plotRollingMeanSentiment(self):
+        sns.set_style("whitegrid")
+        fig, ax = plt.subplots(figsize=(12,8))
+        #fig = Figure(figsize=(10,8),dpi=100)
+        #axis = fig.subplots() 
+        for label, Df in self.df.groupby('sender'):    
+            temp=Df.reset_index()
+            new = pd.DataFrame()
+            new['date']=temp['date']
+            new['polscore']=temp['polscore']
+            #Take 30% of the chat len for window size:
+            windowSize = int(new.size*0.05)
+            print(windowSize)
+            new['rolling'] = new['polscore'].rolling(windowSize).mean() # rolling mean calculation
+            plot = new.plot(x='date', y='rolling', ax=ax,label=label) # rolling mean plot
+        plot.set(title='Rolling Mean Sentiment',xlabel='Date',ylabel='Compound Sentiment')
+        displayImage = StringIO()
+        plt.savefig(displayImage,format='svg')
+        displayImage.seek(0)
+        data=displayImage.getvalue() #return the binary as a string
+        return data
+    
+    #Determine which hours had the most messages exchanged; Plot the info using bar graph:
+    def _plotMostActiveHours(self):
+        #Extract the hours from datetime:
+        time_df = self.df['date'].dt.strftime("%H")
+        print(self.df['date'])
+        #Get message counts for each hour:
+        busy_hours = time_df.value_counts()
+        #currently, busyhours is sorted as the hours with the highest counts;Sort it from 0 to 23:
+        busy_hours.sort_index(inplace=True)
+        
+        #Plot the data:
+        fig = Figure(figsize=(10,8),dpi=100)
+        axis = fig.subplots()
+        plot = busy_hours.plot.bar(ax=axis,xlabel='Hour',ylabel='No. of Messages',title='Hourly Message Counts')
+        displayImage = StringIO()
+        fig.savefig(displayImage,format='svg')
+        displayImage.seek(0)
+        data = displayImage.getvalue()
+        return data

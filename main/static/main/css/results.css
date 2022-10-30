@@ -1,5 +1,51 @@
-.messageClassificationGraph svg{
-    height:500px;
-    width:800px;
-    border: 1px solid black;
+.results-container h3{
+    text-align: center;
+}
+.graphical-display-metric{
+    box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
+    text-align: center;
+    padding: 1em;
+    margin:1.5em auto;
+    border-radius: 5px;
+}
+.graph-container svg{
+    max-width: 1000PX;
+    max-height: 420px;
+    width: 100%;
+    height: auto;
+}
+.emoji-stats{
+    margin:1em auto;
+    padding: 1em;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 1em;
+}
+.emoji-stats-card{
+    box-shadow: rgba(17, 17, 26, 0.05) 0px 1px 0px, rgba(17, 17, 26, 0.1) 0px 0px 8px;
+    border-radius: 5px;
+    padding: 0.5em;
+    flex-grow: 1;
+    flex-basis: 0;
+    text-align: center;
+    width: 100%;
+}
+.emoji-counts{
+    display: flex;
+    flex-grow:1;
+    flex-direction: row;
+    gap: 0.3em;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+.emoji-count{
+    box-shadow: rgba(0, 0, 0, 0.1) 0px 4px 12px;
+    display: flex;
+    flex-direction: column;
+    padding:0.1em 0.8em;
+    border-radius: 20%;
+}
+.emoji-count .count{
+    font-size: 1.1em;
 }
