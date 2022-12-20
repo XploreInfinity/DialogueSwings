@@ -43,11 +43,14 @@ class NLProcessor:
         ppl = defaultdict(list)
 
         # Compile a regexp that segregates (for each line) the date-time from the rest of the text:
-        reg = re.compile(r'^\d{1,2}/\d{1,2}/\d{1,2}, \d{1,2}:\d{1,2} - ')
+        # regexp for 24-hour format:
+        reg_24 = re.compile(r'^\d{1,2}/\d{1,2}/\d{1,2}, \d{1,2}:\d{1,2} - ')
+        # regexp for 12-hour format:
+        reg_12 = re.compile(r'^\d{1,2}/\d{1,2}/\d{1,2}, \d{1,2}:\d{1,2} [a,p]m - ')
         # We will initialise a pandas dataframe, columns values will be stored in these lists:
         df_sender,df_msg,df_date = [],[],[]
         for line in lines:
-            matched = reg.match(line)
+            matched = reg_24.match(line) or reg_12.match(line)
             if matched:
                 #the index at which the message begins
                 begin_idx = line[matched.end():].find(':')+1+matched.end()+1
