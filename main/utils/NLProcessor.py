@@ -95,6 +95,17 @@ class NLProcessor:
     
     #This function classifies messages(using a NaiveBayes classifier trained on nps_chat):
     def _classifyMessages(self):
+        #essentially,take each word and tell the classfier it was present as a 'feature' in this post:
+        def extract_features(post):
+            features = {} # a dictionary storing all the words in this post
+            #Download the punctuation data if it doesn't exist:
+            try:
+                nltk.word_tokenize("")
+            except LookupError:
+                nltk.download('punkt')
+            for word in nltk.word_tokenize(post):
+                features['contains({})'.format(word.lower())] = True
+            return features
         #We'll train a naive-bayes classifier on this sample corpus
         #Check if we already created the classifier:
         nb_classifier = None
@@ -104,7 +115,14 @@ class NLProcessor:
             f.close()
         else:
             #Training data for the classifier:
-            posts = nltk.corpus.nps_chat.xml_posts()
+            posts = []
+            #Ensure that the nps_chat corpus is downloaded. If not, download it:
+            try:
+                posts = nltk.corpus.nps_chat.xml_posts()
+            except LookupError:
+                nltk.download('nps_chat')
+                posts = nltk.corpus.nps_chat.xml_posts()
+           
             label_posts = [(extract_features(p.text),p.get('class')) for p in posts]
             #10% test size:
             test_size = int(len(label_posts)*0.1)
@@ -114,12 +132,7 @@ class NLProcessor:
             f = open('nb-msg-classifier.pickle','wb')
             pickle.dump(nb_classifier,f)
             f.close()
-        #essentially,take each word and tell the classfier it was present as a 'feature' in this post:
-        def extract_features(post):
-            features = {} # a dictionary storing all the words in this post
-            for word in nltk.word_tokenize(post):
-                features['contains({})'.format(word.lower())] = True
-            return features
+        
         #Classify each message from the dataframe, and add its predicted class to the dataframe: 
         df_msgclass = []
         for message in self.df['msg']:
@@ -157,7 +170,13 @@ class NLProcessor:
     
     #Calculate the sentiment of each message using nltk's sia:
     def _calcMessageSentiment(self):
-        sia = SentimentIntensityAnalyzer()
+        #Check whether Vader lexicon is present while initialising the SentimentIntensityAnalyzer
+        sia = object()
+        try:
+            sia = SentimentIntensityAnalyzer()
+        except:
+            nltk.download('vader_lexicon')
+            sia = SentimentIntensityAnalyzer()
         #to store the polarity score of each message:
         df_polscore =[]
         #for each message, get the compound sentiment score
